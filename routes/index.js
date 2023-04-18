@@ -13,4 +13,8 @@ router.route('/file/:folderId?')
 
 router.route('/folder/:folderId?')
     .post(controller.createFolder)
+
+router.route('/file/delete')
+    .delete(controller.deleteFile)
+
 module.exports = router

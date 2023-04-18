@@ -7,10 +7,11 @@ module.exports = {
             const parentsId = req.params.folderId
             const files = [];
             const data = await auth.files.list({
-                q: '\'' + parentsId + '\' in parents',
-                fields: 'nextPageToken, files(id, name, mimeType, iconLink,hasThumbnail,thumbnailLink,webViewLink)',
+                q: '\'' + parentsId + '\' in parents and trashed = false',
+                fields: 'nextPageToken, files(id, name, mimeType, iconLink,hasThumbnail,thumbnailLink,webViewLink,contentHints)',
                 spaces: 'drive',
-                orderBy: 'folder'
+                orderBy: 'folder',
+                trashed: true
             });
             Array.prototype.push.apply(files, data.data.files);
             return res.json(files)
@@ -29,6 +30,7 @@ module.exports = {
             bufferStream.end(fileObject.buffer);
             // console.log(bufferStream)
             const { data } = await auth.files.create({
+                // uploadType:'resumable',
                 media: {
                     mimeType: fileObject.mimeType,
                     body: bufferStream,
@@ -57,11 +59,11 @@ module.exports = {
     },
 
     //create folder
-    createFolder: async(req, res) => {
+    createFolder: async (req, res) => {
         try {
             const name = req.body.name
             const parentsId = req.params.folderId
-            const data  = await auth.files.create({
+            const data = await auth.files.create({
                 requestBody: {
                     mimeType: 'application/vnd.google-apps.folder',
                     name: name,
@@ -84,5 +86,22 @@ module.exports = {
         } catch (e) {
             res.json(e.message)
         }
+    },
+
+    deleteFile: async (req, res) => {
+        const fileId = req.body.id
+        const data = await auth.files.delete({
+            fileId: fileId
+        }).then(async function (response) {
+            res.json({
+                status: 200,
+                message: 'Ok'
+            })
+        }, function (err) {
+            return res.status(400).json({
+                error: { msg: 'Deletion Failed for some reason' }
+            })
+        })
+
     }
 }
