@@ -8,6 +8,9 @@ const controller = require('../controllers')
 router.route('/:folderId?')
     .get(controller.list)
 
+router.route('/:folderId?')
+    .post(controller.getLocation)
+
 router.route('/file/:folderId?')
     .post(upload.single('file'), controller.uploadFile)
 
