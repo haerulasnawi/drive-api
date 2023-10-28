@@ -3,7 +3,7 @@ const app = express()
 const port = 5000
 const index = require('./routes')
 
-app.use(express.json())
+app.use(express.json({limit: '500kb'}))
 app.use(express.urlencoded({ extended: true }))
 app.use('/api/drive', index)
 

@@ -1,7 +1,22 @@
 const stream = require('stream')
-const fs = require('fs');
-const auth = require('../lib/googleAuth')
+const auth = require('../lib/googleAuth');
 module.exports = {
+
+    //get touch file from fileId
+    touch: async (req, res) => {
+        try {
+            const fileId = req.params.fileId
+            let query = {
+                fileId: fileId,
+                fields: 'id, name, mimeType, iconLink,hasThumbnail,thumbnailLink,webViewLink,contentHints,parents',
+            }
+            const data = await auth.drive.files.update(query);
+            return res.json(data.data)
+        } catch (e) {
+            res.json(e.message)
+        }
+    },
+
     //get list file from folderId
     list: async (req, res) => {
         try {
@@ -116,23 +131,38 @@ module.exports = {
 
     },
 
-    getLocation: async (req, res, next) => {
+    getLocation: async (req, res) => {
         const accessToken = await auth.token
+        const r = req.body
         let headersList = {
             "Authorization": "Bearer " + accessToken.token,
-            "Content-Type": "application/json;Charset=UTF-8"
+            "Content-Type": "application/json;Charset=UTF-8",
         }
-        const r = req.body
-        // console.log(r)
-        const response = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable', {
+        const response = await fetch(`https://www.googleapis.com/upload/drive/v3/files?uploadType=resumable`, {
             method: 'POST',
-            // body: JSON.stringify({ name: r.name, mimeType: r.mimeType, contentLength: r.contentLength }),
             body: JSON.stringify(r),
             headers: headersList
         })
-        // console.log(response)
         const location = response.headers.get('location')
-        return res.json({ location: location, content_length: response.headers.get('content-length') })
-        // return next()
+        return res.json({ location: location })
+    },
+
+    uploadChunk: async (req, res) => {
+        const r = req
+        const option = {
+            method: 'PUT',
+            headers: {
+                "Content-Type": "application/json;Charset=UTF-8",
+                "Content-Length": r.file.size,
+                "Content-Range": `bytes ${r.body.start}-${r.body.end}/${r.body.contentLength}`,
+            },
+            body: r.file.buffer
+        }
+        const response = await fetch(r.body.url, option)
+        if (response.status == 200) {
+            const data = await response.json()
+            return res.json({ status: response.status, message: response.statusText, data: data })
+        }
+        return res.json({ status: response.status, message: response.statusText })
     }
 }
