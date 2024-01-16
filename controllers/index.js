@@ -5,7 +5,7 @@ module.exports = {
     //get touch file from fileId
     touch: async (req, res) => {
         try {
-            const fileId = req.params.fileId
+            const fileId = await req.params.fileId
             let query = {
                 fileId: fileId,
                 fields: 'id, name, mimeType, iconLink,hasThumbnail,thumbnailLink,webViewLink,contentHints,parents',
@@ -20,7 +20,7 @@ module.exports = {
     //get list file from folderId
     list: async (req, res) => {
         try {
-            const parentsId = req.params.folderId
+            const parentsId = await req.params.folderId
             const files = [];
             let query = {
                 q: '\'' + parentsId + '\' in parents and trashed = false',
@@ -49,8 +49,8 @@ module.exports = {
     //upload file
     uploadFile: async (req, res) => {
         try {
-            const fileObject = req.file
-            const parentsId = req.params.folderId
+            const fileObject = await req.file
+            const parentsId = await req.params.folderId
 
             const bufferStream = new stream.PassThrough();
             bufferStream.end(fileObject.buffer);
@@ -68,7 +68,7 @@ module.exports = {
                 fields: 'id,name,mimeType,iconLink,hasThumbnail,thumbnailLink,webViewLink',
             });
             const fileId = data.id
-            await auth.drive.permissions.create({
+            auth.drive.permissions.create({
                 fileId: fileId,
                 requestBody: {
                     role: 'reader',
@@ -87,8 +87,8 @@ module.exports = {
     //create folder
     createFolder: async (req, res) => {
         try {
-            const name = req.body.name
-            const parentsId = req.params.folderId
+            const name = await req.body.name
+            const parentsId = await req.params.folderId
             const data = await auth.drive.files.create({
                 requestBody: {
                     mimeType: 'application/vnd.google-apps.folder',
@@ -98,7 +98,7 @@ module.exports = {
                 fields: 'id,name,mimeType,iconLink,hasThumbnail,thumbnailLink,webViewLink',
             });
             const folderId = data.data.id
-            await auth.drive.permissions.create({
+            auth.drive.permissions.create({
                 fileId: folderId,
                 requestBody: {
                     role: 'reader',
@@ -115,7 +115,7 @@ module.exports = {
     },
 
     deleteFile: async (req, res) => {
-        const fileId = req.body.id
+        const fileId = await req.body.id
         const data = await auth.drive.files.delete({
             fileId: fileId
         }).then(async function (response) {
@@ -133,7 +133,7 @@ module.exports = {
 
     getLocation: async (req, res) => {
         const accessToken = await auth.token
-        const r = req.body
+        const r = await req.body
         let headersList = {
             "Authorization": "Bearer " + accessToken.token,
             "Content-Type": "application/json;Charset=UTF-8",
@@ -143,12 +143,17 @@ module.exports = {
             body: JSON.stringify(r),
             headers: headersList
         })
-        const location = response.headers.get('location')
-        return res.json({ location: location })
+        // console.log(response)
+        if (response.status==200) {
+            const location = response.headers.get('location')
+            return res.json({ location: location })
+        }else{
+            return response
+        }
     },
 
     uploadChunk: async (req, res) => {
-        const r = req
+        const r = await req
         const option = {
             method: 'PUT',
             headers: {
